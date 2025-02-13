@@ -5,7 +5,8 @@ module Trie
     , getWords
     , find
     , make
-    , insert ) 
+    , insert
+    , isEmpty ) 
 where
 
 import qualified Data.Map.Strict as M
@@ -36,6 +37,13 @@ data Trie = Node String (M.Map Char Trie) | Empty (M.Map Char Trie)
 
 empty :: Trie
 empty = Empty M.empty
+
+isEmpty :: Trie -> Bool
+isEmpty (Node _ _) = False   
+isEmpty (Empty m) = case M.toList m of
+    [('#', t)] -> isEmpty t  -- Check that actual trie is empty
+    []         -> True       
+    _          -> False 
 
 getChildren :: Trie -> M.Map Char Trie
 getChildren (Node _ c) = c
@@ -78,9 +86,15 @@ prune ('_':rest) node = setChildren node (M.map (prune rest) (getChildren node))
 prune (c:rest) node =
     case M.lookup c (getChildren node) of
         Nothing -> Empty M.empty
-        Just m  -> setChildren node (M.singleton c (prune rest m))
+        Just m  -> let r = prune rest m 
+            in if isEmpty r then Empty M.empty
+                    else setChildren node (M.singleton c r)
 
 -- Returns Trie representing all words (paths) that satisfy string pattern
 find :: String -> Trie -> Maybe Trie
-find word t = prune word <$> M.lookup '#' (getChildren t)
+find word t = 
+    let res = prune word <$> M.lookup '#' (getChildren t)
+    in case res of
+        Just nt -> if isEmpty nt then Nothing else Just $ Empty (M.insert '#' nt M.empty) 
+        Nothing -> Nothing
             
