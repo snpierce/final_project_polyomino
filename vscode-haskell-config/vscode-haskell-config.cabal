@@ -43,6 +43,7 @@ executable vscode-haskell-config-exe
   main-is: Main.hs
   other-modules:
       Board
+      Piece
       Trie
       Paths_vscode_haskell_config
   autogen-modules:
