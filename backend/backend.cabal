@@ -4,11 +4,11 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:           vscode-haskell-config
+name:           backend
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/vscode-haskell-config#readme>
-homepage:       https://github.com/githubuser/vscode-haskell-config#readme
-bug-reports:    https://github.com/githubuser/vscode-haskell-config/issues
+homepage:       https://github.com/githubuser/backend#readme
+bug-reports:    https://github.com/githubuser/backend/issues
 author:         Author name here
 maintainer:     example@example.com
 copyright:      2024 Author name here
@@ -21,56 +21,68 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/vscode-haskell-config
+  location: https://github.com/githubuser/backend
 
 library
   exposed-modules:
       Lib
   other-modules:
-      Paths_vscode_haskell_config
+      Paths_backend
   autogen-modules:
-      Paths_vscode_haskell_config
+      Paths_backend
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
     , containers
     , random-shuffle
+    , warp
+    , yesod
+    , yesod-core
   default-language: Haskell2010
 
-executable vscode-haskell-config-exe
+executable backend-exe
   main-is: Main.hs
   other-modules:
       Board
       Piece
       Trie
-      Paths_vscode_haskell_config
+      Paths_backend
   autogen-modules:
-      Paths_vscode_haskell_config
+      Paths_backend
   hs-source-dirs:
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , backend
+    , base >=4.7 && <5
     , containers
     , random-shuffle
-    , vscode-haskell-config
+    , warp
+    , yesod
+    , yesod-core
   default-language: Haskell2010
 
-test-suite vscode-haskell-config-test
+test-suite backend-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_vscode_haskell_config
+      Paths_backend
   autogen-modules:
-      Paths_vscode_haskell_config
+      Paths_backend
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , backend
+    , base >=4.7 && <5
     , containers
     , random-shuffle
-    , vscode-haskell-config
+    , warp
+    , yesod
+    , yesod-core
   default-language: Haskell2010

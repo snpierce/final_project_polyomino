@@ -1,3 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE QuasiQuotes #-}
+
 module Main where
 
 import qualified Trie as T
@@ -8,12 +13,30 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Maybe (fromMaybe)
 import System.Random.Shuffle (shuffleM)
-import qualified Data.Type.Bool as P
+import Yesod
+
+-- Define the application data type (App)
+data App = App
+
+-- This tells Yesod how to serve routes
+mkYesod "App" [parseRoutes|
+/ HomeR GET
+|]
+
+-- Make 'App' an instance of Yesod
+instance Yesod App
+
+-- Define a handler for the home route
+getHomeR :: Handler Html
+getHomeR = defaultLayout [whamlet|<h1>Hello from Yesod!|]
 
 type Tries = M.Map String T.Trie
 
 main :: IO ()
-main = do
+main = warp 3000 App
+
+game :: IO ()
+game = do
     wordsList <- T.loadCSV "src/wordlist.txt"
     let fullTrie = T.make wordsList
         -- Map from word to Trie (starts as full Trie - all words possible)

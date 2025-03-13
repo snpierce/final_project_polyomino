@@ -1,6 +1,6 @@
-name:                vscode-haskell-config
+name:                backend
 version:             0.1.0.0
-github:              "githubuser/vscode-haskell-config"
+github:              "githubuser/backend"
 license:             BSD-3-Clause
 author:              "Author name here"
 maintainer:          "example@example.com"
@@ -23,6 +23,10 @@ dependencies:
 - base >= 4.7 && < 5
 - random-shuffle
 - containers
+- yesod
+- yesod-core
+- warp
+- aeson
 
 ghc-options:
 - -Wall
@@ -39,7 +43,7 @@ library:
   source-dirs: src
 
 executables:
-  vscode-haskell-config-exe:
+  backend-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -47,10 +51,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - vscode-haskell-config
+    - backend
 
 tests:
-  vscode-haskell-config-test:
+  backend-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -58,4 +62,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - vscode-haskell-config
+    - backend
