@@ -20,15 +20,15 @@ data App = App
 
 -- This tells Yesod how to serve routes
 mkYesod "App" [parseRoutes|
-/ HomeR GET
+/api/home HomeR GET
 |]
 
 -- Make 'App' an instance of Yesod
 instance Yesod App
 
 -- Define a handler for the home route
-getHomeR :: Handler Html
-getHomeR = defaultLayout [whamlet|<h1>Hello from Yesod!|]
+getHomeR :: Handler Value
+getHomeR = returnJson $ object ["message" .= ("Hello from Yesod!" :: String)]
 
 type Tries = M.Map String T.Trie
 
