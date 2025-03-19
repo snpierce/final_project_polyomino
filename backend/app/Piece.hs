@@ -1,9 +1,13 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Piece
     ( printPieces
     , initAssign
     , assign
     , scramble
     , getCells
+    , mockPieces
     , Piece(..)
     , Direction(..)
     , Orientation(..)
@@ -11,6 +15,9 @@ module Piece
     , Assignment
     , Pos ) 
 where
+
+import Data.Aeson
+import GHC.Generics (Generic)
 
 import qualified Board as B
 import qualified Data.Map as M
@@ -21,16 +28,38 @@ import System.Random.Shuffle (shuffleM)
 
 
 type Pos = (Int, Int)
-data Direction = Vertical | Horizontal deriving (Show, Eq)
-data Orientation = Standard | EastSouth | SouthEast | EastNorth | SouthWest deriving (Show, Eq)
+data Direction = Vertical | Horizontal deriving (Show, Eq, Generic)
+data Orientation = Standard | EastSouth | SouthEast | EastNorth | SouthWest deriving (Show, Eq, Generic)
 data Piece = Dot
     | Pair Direction
     | Stack Direction
     | Hook Orientation
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic)
+
+instance ToJSON Direction
+instance ToJSON Orientation
+
+instance ToJSON Piece where
+  toJSON Dot = object ["type" .= String "Dot"]
+  toJSON (Pair dir) = object ["type" .= String "Pair", "direction" .= dir]
+  toJSON (Stack dir) = object ["type" .= String "Stack", "direction" .= dir]
+  toJSON (Hook ori) = object ["type" .= String "Hook", "orientation" .= ori]
 
 type Pieces = [(Piece, Pos)]
 type Assignment = M.Map Pos Bool  -- True if assigned, False if empty
+
+-- Mock Pieces
+mockPieces :: Pieces
+mockPieces =
+  [ (Dot, (0, 1))
+  , (Pair Horizontal, (2, 0))
+  , (Pair Vertical, (1, 2))
+  , (Pair Vertical, (2, 3))
+  , (Hook EastSouth, (0, 2))
+  , (Hook SouthEast, (0, 0))
+  , (Stack Horizontal, (3, 0))
+  ]
+
 
 -- Initialize a 4x4 board with all positions unassigned
 initAssign :: Assignment

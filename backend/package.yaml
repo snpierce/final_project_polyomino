@@ -27,6 +27,7 @@ dependencies:
 - yesod-core
 - warp
 - aeson
+- http-types
 
 ghc-options:
 - -Wall

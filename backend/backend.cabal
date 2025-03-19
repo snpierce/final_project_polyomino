@@ -37,6 +37,7 @@ library
       aeson
     , base >=4.7 && <5
     , containers
+    , http-types
     , random-shuffle
     , warp
     , yesod
@@ -60,6 +61,7 @@ executable backend-exe
     , backend
     , base >=4.7 && <5
     , containers
+    , http-types
     , random-shuffle
     , warp
     , yesod
@@ -81,6 +83,7 @@ test-suite backend-test
     , backend
     , base >=4.7 && <5
     , containers
+    , http-types
     , random-shuffle
     , warp
     , yesod

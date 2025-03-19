@@ -5,6 +5,9 @@ module Board
     , chooseNextWord
     , isFull
     , getWord
+    , boardToJSON
+    , mockPlayBoard
+    , mockSolutionBoard
     , Board ) 
 where
 
@@ -13,9 +16,35 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.List as L
 import Data.Maybe (fromMaybe)
+import Data.Aeson
+import Data.Aeson.Key (fromString)
 
 type Pos = (Int, Int)
 type Board = M.Map Pos Char
+
+mockSolutionBoard :: Board
+mockSolutionBoard = M.fromList
+  [ ((0,0), 'S'), ((0,1), 'L'), ((0,2), 'A'), ((0,3), 'B')
+  , ((1,0), 'T'), ((1,1), 'I'), ((1,2), 'L'), ((1,3), 'E')
+  , ((2,0), 'O'), ((2,1), 'V'), ((2,2), 'A'), ((2,3), 'L')
+  , ((3,0), 'W'), ((3,1), 'E'), ((3,2), 'S'), ((3,3), 'T')
+  ]
+
+mockPlayBoard :: Board
+mockPlayBoard = M.fromList
+  [ ((0,0), 'V'), ((0,1), 'I'), ((0,2), 'A'), ((0,3), 'L')
+  , ((1,0), 'E'), ((1,1), 'S'), ((1,2), 'S'), ((1,3), 'T')
+  , ((2,0), 'L'), ((2,1), 'E'), ((2,2), 'T'), ((2,3), 'O')
+  , ((3,0), 'L'), ((3,1), 'A'), ((3,2), 'B'), ((3,3), 'W')
+  ]
+
+-- Convert Pos (Int, Int) to a string "x,y"
+posToString :: Pos -> String
+posToString (x, y) = show x ++ "," ++ show y
+
+boardToJSON :: Board -> Value
+boardToJSON board = object $ map (\(pos, char) -> (fromString $ posToString pos, toJSON [char])) (M.toList board)
+
 type Change = S.Set Pos
 type WordSet = M.Map String [Pos]
 

@@ -1,10 +1,17 @@
 // frontend/src/types.ts
 
+export interface GameProps {
+  playBoard: Map<string, string>;
+  playPieces: Pieces;
+  solutionBoard: Map<string, string>;
+}
+
+
 // Position on the board: (x, y)
 export type Pos = [number, number];
 
 // Board is a map of positions to characters
-export type Board = Record<string, string>; // Using string keys like "x,y" for simplicity
+export type Board = Map<string, string>; // Using string keys like "x,y" for simplicity
 
 export type Direction = 'Vertical' | 'Horizontal';
 export type Orientation = 'Standard' | 'EastSouth' | 'SouthEast' | 'EastNorth' | 'SouthWest';

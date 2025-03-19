@@ -14,6 +14,7 @@ import qualified Data.Set as S
 import Data.Maybe (fromMaybe)
 import System.Random.Shuffle (shuffleM)
 import Yesod
+import Network.HTTP.Types.Status (status500)
 
 -- Define the application data type (App)
 data App = App
@@ -21,21 +22,42 @@ data App = App
 -- This tells Yesod how to serve routes
 mkYesod "App" [parseRoutes|
 /api/home HomeR GET
+/api/mock MockR GET
 |]
 
 -- Make 'App' an instance of Yesod
 instance Yesod App
 
 -- Define a handler for the home route
+getMockR :: Handler Value
+getMockR = do
+        returnJson $ object
+            [ "playBoard" .= B.boardToJSON B.mockPlayBoard
+            , "solutionBoard" .= B.boardToJSON B.mockSolutionBoard
+            , "pieces" .= P.mockPieces
+            ] 
+
 getHomeR :: Handler Value
-getHomeR = returnJson $ object ["message" .= ("Hello from Yesod!" :: String)]
+getHomeR = do
+  res <- liftIO game
+  case res of
+    Nothing -> sendResponseStatus status500 $ object ["error" .= ("Failed to generate game" :: String)]
+    Just (playBoard, solutionBoard, pieces) ->
+        returnJson $ object
+            [ "playBoard" .= B.boardToJSON playBoard
+            , "solutionBoard" .= B.boardToJSON solutionBoard
+            , "pieces" .= pieces
+            ]
+
+
+---------------------
 
 type Tries = M.Map String T.Trie
 
 main :: IO ()
 main = warp 3000 App
 
-game :: IO ()
+game :: IO (Maybe (B.Board, B.Board, P.Pieces))
 game = do
     wordsList <- T.loadCSV "src/wordlist.txt"
     let fullTrie = T.make wordsList
@@ -43,23 +65,25 @@ game = do
         tries = foldr (`M.insert` fullTrie) M.empty ["1a","2a","3a","4a","1d","2d","3d","4d"]
     res <- run B.makeBoard tries
     case res of
-        Nothing -> pure ()
+        Nothing -> pure Nothing
         Just (board, _) -> do
             putStrLn "Solution board:\n"
             B.printBoard $ Just board
             assn <- P.assign [] pieces P.initAssign
             case assn of
-                Nothing -> pure ()
+                Nothing -> pure Nothing
                 Just (ps, _, _) -> do
-                    -- P.printPieces ps board
+                    P.printPieces ps board
                     assn2 <- P.scramble [] ps (P.initAssign, M.empty)
                     case assn2 of
-                        Nothing -> pure ()
+                        Nothing -> pure Nothing
                         Just (tiles, _, (_, ts)) -> do
                             -- P.printPieces tiles board
                             playBoard <- remapBoard board tiles ts
                             putStrLn "\nShuffled board:\n"
                             B.printBoard $ Just playBoard
+                            P.printPieces tiles playBoard
+                            pure $ Just (playBoard, board, tiles)
 
 
 run :: B.Board -> Tries -> IO (Maybe (B.Board, Tries))
@@ -121,22 +145,15 @@ pieces = [P.Dot, P.Dot,
           P.Hook P.Standard, P.Hook P.EastSouth, P.Hook P.SouthEast, P.Hook P.EastNorth, P.Hook P.SouthWest,
           P.Hook P.Standard, P.Hook P.EastSouth, P.Hook P.SouthEast, P.Hook P.EastNorth, P.Hook P.SouthWest]
 
+-- Original board, New Pieces, Transformations (new to old)
 remapBoard :: B.Board -> P.Pieces -> M.Map P.Pos P.Pos -> IO B.Board
 remapBoard board pieces posMap = do
     pure $ foldr insertCells M.empty pieces
   where
     insertCells (piece, startPos) acc =
-        let a = P.getCells piece startPos
+        let a = P.getCells piece startPos -- this will be new start pos (fixed)
             b = P.getCells piece $ fromMaybe (0,0) $ M.lookup startPos posMap in
        foldr (\(oldPos, newPos) acc' ->
             case M.lookup oldPos board of
                 Just char -> M.insert newPos char acc'
-                Nothing   -> acc') acc (zip a b)
-        
-
--- (\(piece, pos) -> 
---     a <- getCells piece pos
---     b <- getCells piece . M.lookup pos posMap
---     zipWith (\old new -> (new, M.lookup old board)) a b 
---     foldr (M.insert )
--- )
+                Nothing   -> acc') acc (zip b a)
