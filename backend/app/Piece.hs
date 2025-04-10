@@ -8,6 +8,7 @@ module Piece
     , scramble
     , getCells
     , mockPieces
+    , mockPieces2
     , Piece(..)
     , Direction(..)
     , Orientation(..)
@@ -58,6 +59,17 @@ mockPieces =
   , (Hook EastSouth, (0, 2))
   , (Hook SouthEast, (0, 0))
   , (Stack Horizontal, (3, 0))
+  ]
+
+mockPieces2 :: Pieces
+mockPieces2 =
+  [ (Dot, (0, 3))
+  , (Dot, (1, 2))
+  , (Stack Vertical, (1, 3))
+  , (Pair Vertical, (1, 1))
+  , (Stack Vertical, (1, 0))
+  , (Hook EastNorth, (3, 1))
+  , (Stack Horizontal, (0, 0))
   ]
 
 

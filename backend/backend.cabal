@@ -36,9 +36,11 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
     , containers
     , http-types
     , random-shuffle
+    , split
     , warp
     , yesod
     , yesod-core
@@ -60,9 +62,11 @@ executable backend-exe
       aeson
     , backend
     , base >=4.7 && <5
+    , bytestring
     , containers
     , http-types
     , random-shuffle
+    , split
     , warp
     , yesod
     , yesod-core
@@ -82,9 +86,11 @@ test-suite backend-test
       aeson
     , backend
     , base >=4.7 && <5
+    , bytestring
     , containers
     , http-types
     , random-shuffle
+    , split
     , warp
     , yesod
     , yesod-core

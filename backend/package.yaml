@@ -28,6 +28,8 @@ dependencies:
 - warp
 - aeson
 - http-types
+- bytestring
+- split
 
 ghc-options:
 - -Wall

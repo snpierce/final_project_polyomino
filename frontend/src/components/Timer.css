@@ -1,0 +1,12 @@
+.timer {
+    display: flex;
+    justify-content: center; /* Center the button */
+    margin-top: auto; /* Push to the bottom */
+    margin: 6px;
+    width: 100px;
+    height: 100px;
+    border: 2px;
+    border-color: black;
+    font-size: 24px;
+    font-weight: bold;
+  }

@@ -11,12 +11,16 @@ where
 
 import qualified Data.Map.Strict as M
 import Data.Char (toLower)
+import Data.List.Split (splitOn)
 
 -- Help functions to load csv file into String list
-loadCSV :: FilePath -> IO [String]
+loadCSV :: FilePath -> IO [(String, Int)]
 loadCSV filePath = do
     content <- readFile filePath
-    pure $ map (map toLower) $ lines content
+    let parseLine line = case splitOn "," line of
+                            [str, numStr] -> (str, read numStr :: Int)
+                            _             -> error $ "Invalid line: " ++ line
+    pure $ map parseLine $ lines content
 
 -- Deprecated: used to reform words.csv into correct format (lowercase, no "")
 processCSV :: String -> String
@@ -32,7 +36,7 @@ transformCSV inputFile outputFile = do
 
 -- Note: Redundant because all words are 4-letters
 -- Node "word" ChildTries | Empty (Map of following char:Trie)
-data Trie = Node String (M.Map Char Trie) | Empty (M.Map Char Trie)
+data Trie = Node (String, Int) (M.Map Char Trie) | Empty (M.Map Char Trie)
   deriving (Eq, Show)
 
 empty :: Trie
@@ -54,28 +58,28 @@ setChildren (Node s _) newChildren = Node s newChildren
 setChildren (Empty _) newChildren = Empty newChildren
 
 -- Every Trie should be Empty ('#':actual trie)
-make :: [String] -> Trie
+make :: [(String, Int)] -> Trie
 make ss = let t = foldl (flip insert) empty ss in 
     Empty (M.insert '#' t M.empty)
 
-insert :: String -> Trie -> Trie
-insert word trie = recurse word trie
+insert :: (String, Int) -> Trie -> Trie
+insert (word, idx) = recurse (word, idx)
   where
-    recurse :: String -> Trie -> Trie
-    recurse "" t = Node word (getChildren t)
-    recurse (c:rest) node = 
+    recurse :: (String, Int) -> Trie -> Trie
+    recurse ("", idx) t = Node (word, idx) (getChildren t)
+    recurse (c:rest, idx) node = 
         let children = getChildren node in
         -- Check if the character already exists in children
         case M.lookup c children of
-            Nothing -> setChildren node $ M.insert c (recurse rest empty) children -- doesn't exist, add new Trie
-            Just childTrie -> setChildren node (M.insert c (recurse rest childTrie) children) -- already exists, move to next 
+            Nothing -> setChildren node $ M.insert c (recurse (rest, idx) empty) children -- doesn't exist, add new Trie
+            Just childTrie -> setChildren node (M.insert c (recurse (rest, idx) childTrie) children) -- already exists, move to next 
 
 -- Using Monoid so this can be used in different contexts (like Maybe)
-getValue :: (Applicative m, Monoid (m String)) => Trie -> m String
+getValue :: (Applicative m, Monoid (m (String, Int))) => Trie -> m (String, Int)
 getValue (Empty _) = mempty
 getValue (Node nodeValue _) = pure nodeValue
 
-getWords :: Trie -> [ String ]
+getWords :: Trie ->  [(String, Int)]
 getWords t = getValue t <> 
                foldMap getWords (getChildren t)
 

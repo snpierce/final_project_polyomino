@@ -8,6 +8,8 @@ module Board
     , boardToJSON
     , mockPlayBoard
     , mockSolutionBoard
+    , mockPlayBoard2
+    , mockSolutionBoard2
     , Board ) 
 where
 
@@ -28,6 +30,22 @@ mockSolutionBoard = M.fromList
   , ((1,0), 'T'), ((1,1), 'I'), ((1,2), 'L'), ((1,3), 'E')
   , ((2,0), 'O'), ((2,1), 'V'), ((2,2), 'A'), ((2,3), 'L')
   , ((3,0), 'W'), ((3,1), 'E'), ((3,2), 'S'), ((3,3), 'T')
+  ]
+
+mockSolutionBoard2 :: Board
+mockSolutionBoard2 = M.fromList
+  [ ((0,0), 'T'), ((0,1), 'U'), ((0,2), 'R'), ((0,3), 'N')
+  , ((1,0), 'S'), ((1,1), 'L'), ((1,2), 'U'), ((1,3), 'E')
+  , ((2,0), 'A'), ((2,1), 'N'), ((2,2), 'I'), ((2,3), 'S')
+  , ((3,0), 'R'), ((3,1), 'A'), ((3,2), 'N'), ((3,3), 'T')
+  ]
+
+mockPlayBoard2 :: Board
+mockPlayBoard2 = M.fromList
+  [ ((0,0), 'A'), ((0,1), 'N'), ((0,2), 'T'), ((0,3), 'N')
+  , ((1,0), 'U'), ((1,1), 'R'), ((1,2), 'T'), ((1,3), 'S')
+  , ((2,0), 'L'), ((2,1), 'U'), ((2,2), 'E'), ((2,3), 'A')
+  , ((3,0), 'N'), ((3,1), 'I'), ((3,2), 'S'), ((3,3), 'R')
   ]
 
 mockPlayBoard :: Board

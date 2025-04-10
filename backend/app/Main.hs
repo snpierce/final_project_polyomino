@@ -12,9 +12,11 @@ import qualified Piece as P
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Maybe (fromMaybe)
+import Data.Aeson (ToJSON, encode, object, (.=), Value)
 import System.Random.Shuffle (shuffleM)
 import Yesod
 import Network.HTTP.Types.Status (status500)
+import qualified Data.ByteString.Lazy as L
 
 -- Define the application data type (App)
 data App = App
@@ -26,7 +28,7 @@ mkYesod "App" [parseRoutes|
 |]
 
 -- Make 'App' an instance of Yesod
-instance Yesod App
+instance Yesod App 
 
 -- Define a handler for the home route
 getMockR :: Handler Value
@@ -42,7 +44,8 @@ getHomeR = do
   res <- liftIO game
   case res of
     Nothing -> sendResponseStatus status500 $ object ["error" .= ("Failed to generate game" :: String)]
-    Just (playBoard, solutionBoard, pieces) ->
+    Just (playBoard, solutionBoard, pieces) -> do
+        _ <- liftIO $ writeGameStateToJson "src/data.json" playBoard solutionBoard pieces
         returnJson $ object
             [ "playBoard" .= B.boardToJSON playBoard
             , "solutionBoard" .= B.boardToJSON solutionBoard
@@ -57,65 +60,75 @@ type Tries = M.Map String T.Trie
 main :: IO ()
 main = warp 3000 App
 
+writeGameStateToJson :: FilePath -> B.Board -> B.Board -> P.Pieces -> IO ()
+writeGameStateToJson filePath playBoard solutionBoard pieces = do
+  let gameState = object
+        [ "playBoard" .= B.boardToJSON playBoard
+        , "solutionBoard" .= B.boardToJSON solutionBoard
+        , "pieces" .= map (\(p, pos) -> object ["piece" .= p, "position" .= pos]) pieces
+        ]
+  L.appendFile filePath (encode gameState <> "\n")
+  putStrLn $ "Game state written to " ++ filePath
+
 game :: IO (Maybe (B.Board, B.Board, P.Pieces))
 game = do
-    wordsList <- T.loadCSV "src/wordlist.txt"
+    wordsList <- T.loadCSV "src/wordlist_idx.csv"
     let fullTrie = T.make wordsList
         -- Map from word to Trie (starts as full Trie - all words possible)
         tries = foldr (`M.insert` fullTrie) M.empty ["1a","2a","3a","4a","1d","2d","3d","4d"]
-    res <- run B.makeBoard tries
+    res <- run B.makeBoard tries 0
     case res of
         Nothing -> pure Nothing
-        Just (board, _) -> do
-            putStrLn "Solution board:\n"
-            B.printBoard $ Just board
+        Just (board, _, _) -> do
+            -- putStrLn "Solution board:\n"
+            -- B.printBoard $ Just board
             assn <- P.assign [] pieces P.initAssign
             case assn of
                 Nothing -> pure Nothing
                 Just (ps, _, _) -> do
-                    P.printPieces ps board
+                    -- P.printPieces ps board
                     assn2 <- P.scramble [] ps (P.initAssign, M.empty)
                     case assn2 of
                         Nothing -> pure Nothing
                         Just (tiles, _, (_, ts)) -> do
                             -- P.printPieces tiles board
                             playBoard <- remapBoard board tiles ts
-                            putStrLn "\nShuffled board:\n"
-                            B.printBoard $ Just playBoard
-                            P.printPieces tiles playBoard
+                            -- putStrLn "\nShuffled board:\n"
+                            -- B.printBoard $ Just playBoard
+                            -- P.printPieces tiles playBoard
                             pure $ Just (playBoard, board, tiles)
 
 
-run :: B.Board -> Tries -> IO (Maybe (B.Board, Tries))
-run board tries
+run :: B.Board -> Tries -> Int -> IO (Maybe (B.Board, Tries, Int))
+run board tries diff
   | B.isFull board = pure $ if isTriesEmpty tries then
-        Nothing else Just (board, tries) -- If there is an empty Trie (invalid word) then backtrack
+        Nothing else Just (board, tries, diff) -- If there is an empty Trie (invalid word) then backtrack
   | otherwise
   = do
         let next = B.chooseNextWord board-- which loc to update
-        try <- tryWords next board tries
+        try <- tryWords next board tries diff
         case try of
             Nothing -> pure Nothing
-            Just (newBoard, newTries) -> do
-                run newBoard newTries
+            Just (newBoard, newTries, nextDiff) -> do
+                run newBoard newTries nextDiff
 
-tryWords :: String -> B.Board -> Tries -> IO (Maybe (B.Board, Tries))
-tryWords next board tries
+tryWords :: String -> B.Board -> Tries -> Int -> IO (Maybe (B.Board, Tries, Int))
+tryWords next board tries diff
   | isTriesEmpty tries = pure Nothing -- backtrack (?)
   | otherwise = do
     let
       tryOptions _ _ [] _ = pure Nothing  -- No words left, backtrack
-      tryOptions b n (word:words) ts = do
+      tryOptions b n ((word, idx):words) ts = do
         let (newBoard, changedWords) = B.updateBoard n word b
             newTries = updateTries ts changedWords newBoard
 
-        if isTriesEmpty newTries  -- If empty, keep trying the rest of the words
+        if isTriesEmpty newTries || diff + idx > 2  -- If empty or too obscure, keep trying the rest of the words
             then tryOptions b n words ts
             else do
-                nextRes <- run newBoard newTries  -- Return the first valid board found
+                nextRes <- run newBoard newTries (diff + idx)  -- Return the first valid board found
                 case nextRes of
                     Nothing -> tryOptions b n words ts
-                    Just (nextBoard, nextTries) -> pure nextRes
+                    Just (nextBoard, nextTries, nextDiff) -> pure nextRes
     opts <- shuffleM $ T.getWords (fromMaybe T.empty (M.lookup next tries)) -- list of available words at loc
     tryOptions board next opts tries
 
