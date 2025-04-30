@@ -2,7 +2,7 @@ module Board
     ( makeBoard
     , updateBoard
     , printBoard 
-    , chooseNextWord
+    , chooseNextWordOld
     , isFull
     , getWord
     , boardToJSON
@@ -17,6 +17,7 @@ where
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.List as L
+import qualified Trie as T
 import Data.Maybe (fromMaybe)
 import Data.Aeson
 import Data.Aeson.Key (fromString)
@@ -130,10 +131,9 @@ isFull board =
     all (\pair -> 0 == snd pair) wordAssigns
 
 -- Choose an unassigned word based on fewest '_' characters
-chooseNextWord :: Board -> String
-chooseNextWord board = 
+chooseNextWordOld :: Board -> String
+chooseNextWordOld board  = 
     let posIsEmpty p = M.lookup p board == Just '_'
         unassigned = M.toList $ M.filter (> 0) $ M.map (length . filter posIsEmpty) wordSet
     in fst $ head $ L.sortOn snd unassigned
 
--- Choose an unassigned word based on smallest Trie

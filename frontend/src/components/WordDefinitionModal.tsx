@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import './WordDefinitionModal.css'
+import './static/WordDefinitionModal.css'
 // import ReactDOM from 'react-dom';
 
 export const WordDefinitionModal: React.FC<{ word: string }> = ({ word }) => {
@@ -17,7 +17,7 @@ export const WordDefinitionModal: React.FC<{ word: string }> = ({ word }) => {
   
     useEffect(() => {
       const fetchDefinition = async () => {
-        console.log("word: ", word);
+
         if (!definitions.has(word) && word !== "") {
             const url = `https://wordsapiv1.p.rapidapi.com/words/${word}/definitions`;
             const options = {
@@ -27,15 +27,12 @@ export const WordDefinitionModal: React.FC<{ word: string }> = ({ word }) => {
                     'x-rapidapi-host': 'wordsapiv1.p.rapidapi.com'
                 }
             };
-            console.log("word in url: ", word);
             try {
                 const response = await fetch(url, options);
                 const result = await response.json();
-                console.log(result);
                 const definitions = result.definitions;
 
                 if (definitions) {
-                    console.log("def: ", definitions);
                     const locDef = definitions;
                     setDefinition(locDef);
                     setDefinitions(prev => new Map(prev).set(word, locDef));
@@ -57,8 +54,10 @@ export const WordDefinitionModal: React.FC<{ word: string }> = ({ word }) => {
       }
     }, [word]);
   
-    return (showModal &&
-        <div className="def-modal">
+    return (
+      <div className="def-modal">
+        Click word for definition!
+        {showModal &&
             <div className="def-modal-main">
                 <div className="def-modal-body">
                     <h2>{word}</h2>
@@ -80,7 +79,6 @@ export const WordDefinitionModal: React.FC<{ word: string }> = ({ word }) => {
                 <div className="def-btn-container">
                     <button onClick={onClose}>X</button>
                 </div>
-            </div>
-      </div>
-    );
+            </div>  
+      }</div>);
   };

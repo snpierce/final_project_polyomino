@@ -1,25 +1,33 @@
-import React, { ReactElement } from "react";
-import ReactDOM from 'react-dom';
-import './Popup.css';
+import React, { ReactElement, useState } from "react";
+import './static/Popup.css';
 
 interface ModalProps {
-    open: boolean;
     onClose: () => void;
+    open: boolean;
     children: ReactElement;
   }
   
+
   export default function Modal(props: ModalProps): ReturnType<React.FC> {
-    return ReactDOM.createPortal(props.open && 
-        <div className="modal-overlay">
-        <div className="modal-main">
-          <div className="modal-body">{props.children}</div>
+    const [isVisible, setIsVisible] = useState(true);
+
+    const handleClose = () => {
+      setIsVisible(false);
+      // console.log("closing");
+      setTimeout(props.onClose, 500); // Match with CSS animation duration
+    };
+
+    return (
+        <div className={`modal-main ${isVisible ? 'slide-in': 'slide-out'}`}>
           <div className="btn-container">
-            <button type="button" className="btn" onClick={props.onClose}>
-              Close
+            <button className="btn" onClick={handleClose}>
+              Back to puzzle X
             </button>
           </div>
+          <div className="modal-body">           
+            {props.children}
+          </div>
         </div>
-        </div>, document.body
     );
   }
   

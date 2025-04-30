@@ -2,22 +2,23 @@ import React, { useState, useRef, useEffect } from 'react';
 import Draggable from 'react-draggable';
 import { Piece, Pieces, Pos, GameProps } from '../types';
 import { useOccupiedCells } from '../OccupiedCellsContext';
-import Timer from './Timer';
-import { WordDefinitionModal } from './WordDefinitionModal';
-import './Timer.css';
-import './Game.css';
+import { useGameState } from '../GameStateContext';
+import './static/Timer.css';
+import './static/Game.css';
 
 const GRID_SIZE = 4;
 const CELL_SIZE = 102;
 const pieceColors = ["#B7B1F2", "#FDB7EA", "#FBF3B9", "#C1CFA1", "#FFDCCC", "#FFB4A2", "#BFECFF", "#E5E1DA"];
 
-const DraggablePiece: React.FC <{pieceData: [Piece, Pos], index: number, playBoard: Map<string, string>, gameFinished: boolean }> = ({ pieceData, index, playBoard, gameFinished }) => {
+
+
+const DraggablePiece: React.FC <{pieceData: [Piece, Pos], index: number, playBoard: Map<string, string> }> = ({ pieceData, index, playBoard }) => {
   const [piece, initialPos] = pieceData;
   const [offset, setOffset] = useState({ x: initialPos[0], y: initialPos[1] });
   const [currPos, setCurrPos] = useState({ x: initialPos[0], y: initialPos[1] });
 
   useEffect(() => {
-    console.log("pos: ", initialPos[0], initialPos[1]);
+    // console.log("pos: ", initialPos[0], initialPos[1]);
     setOffset({ x: initialPos[0], y: initialPos[1] });
     setCurrPos({ x: initialPos[0], y: initialPos[1] });
   }, [pieceData]); 
@@ -26,10 +27,47 @@ const DraggablePiece: React.FC <{pieceData: [Piece, Pos], index: number, playBoa
 
   const [ localCells, setLocalCells ] = useState<Pos[]>([]);
   const { occupiedCells, setOccupiedCells } = useOccupiedCells();
+  const { gameFinished } = useGameState();
   const nodeRef = useRef<HTMLElement>(null);
+
+  const [scale, setScale] = useState(0.7);
+
+  useEffect(() => {
+    const updateScale = () => {
+      setScale(window.innerWidth < 768 ? 0.6 : 0.7);
+    };
+
+    updateScale(); // call on mount
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, []);
+
+  const boardElement = document.querySelector(".board-wrapper") as HTMLElement;
+
+  function isInsideVisibleGrid(x: number, y: number): boolean {
+    if (!boardElement) return false;
+  
+    const rect = boardElement.getBoundingClientRect();
+    // console.log(rect.left, rect.right);
+  
+    const visibleMinY = -rect.left / (CELL_SIZE * scale);
+    const visibleMaxY = (window.innerWidth - rect.left) / (CELL_SIZE * scale);
+  
+    const visibleMinX = -rect.top / (CELL_SIZE * scale);
+    const visibleMaxX = (window.innerHeight - rect.top) / (CELL_SIZE * scale);
+    
+    return x >= visibleMinX && x < visibleMaxX && y >= visibleMinY && y < visibleMaxY;
+  }
+
 
   // Function to check if the target position is free
   const isPositionFree = (gridX: number, gridY: number) => {
+    if (gridX === -1 && (gridY === 1 || gridY === 2)){
+      return false;
+    }
+
+    if (!isInsideVisibleGrid(gridX, gridY)) { return false;}
+
     const cells = renderPieceCells(piece, [gridX, gridY]);
     const oldCells = renderPieceCells(piece, [currPos.x, currPos.y]);
 
@@ -46,6 +84,7 @@ const DraggablePiece: React.FC <{pieceData: [Piece, Pos], index: number, playBoa
   
     return isFree;  // Returns true if all cells are free
   };
+
 
   const renderPieceCells = (piece: Piece, [x, y]: Pos) => {
     const cells: [number, number][] = [];
@@ -106,19 +145,25 @@ const DraggablePiece: React.FC <{pieceData: [Piece, Pos], index: number, playBoa
 
   const outlineColor = pieceColors[index % pieceColors.length];
 
+
   return (  
   <Draggable
     nodeRef={nodeRef as React.RefObject<HTMLElement>}
+    enableUserSelectHack={false}
+    scale={scale}
     position={position}
-    onStop={(e, data) => {
-      const snappedY = Math.round(data.x / CELL_SIZE) * CELL_SIZE;
-      const snappedX = Math.round(data.y / CELL_SIZE) * CELL_SIZE;
+    onStop={(_e, data) => {
+      const snappedY = Math.round(data.x / (CELL_SIZE)) * (CELL_SIZE);
+      const tempSnappedX = Math.round(data.y / (CELL_SIZE)) * (CELL_SIZE);
       
-      const gridX = snappedX / CELL_SIZE +offset.x;
-      const gridY = snappedY / CELL_SIZE +offset.y;
+      const tempX = tempSnappedX / (CELL_SIZE) +offset.x;
+      const gridY = snappedY / (CELL_SIZE) +offset.y;
+
+      const gridX = (tempX < -1) ? -1 : tempX;
+      const snappedX = (tempX < -1) ? -102 : tempSnappedX;
 
       // Only snap if the position is free
-
+      // console.log(tempSnappedX, snappedY, gridX, gridY);
       if (isPositionFree(gridX, gridY)) {
         const oldCells = renderPieceCells(piece, [currPos.x, currPos.y]);
         const newCells = renderPieceCells(piece, [gridX, gridY]);
@@ -141,12 +186,16 @@ const DraggablePiece: React.FC <{pieceData: [Piece, Pos], index: number, playBoa
         setCurrPos({ x: gridX, y: gridY });
         setOccupiedCells(tempMap);
       } else {
-        console.log(gridX, gridY);
+
         setPosition({ x: position.x, y: position.y }); // Revert if occupied
       }
     }}
   >
-    <div ref={nodeRef as React.RefObject<HTMLDivElement>} style={{ position: "absolute" }}>
+    <div className='piece-wrapper'>
+    <div 
+    className={gameFinished ? 'roll-glow' : ''}
+    ref={nodeRef as React.RefObject<HTMLDivElement>} 
+    style={{ position: "fixed", animationDelay: `${index * 0.2}s` }}>
       {cells.map(([x, y], index) => {
         const positionKey = `${x},${y}`;
 
@@ -156,36 +205,29 @@ const DraggablePiece: React.FC <{pieceData: [Piece, Pos], index: number, playBoa
         return (
           <div
             key={index}
-            style={{
-              position: "absolute",
-              width: 100,
-              height: 100,
+            className="tile"
+            style={{         
+              top: x * (CELL_SIZE),
+              left: y * (CELL_SIZE),
+              pointerEvents: allowEvents,
               backgroundColor: outlineColor,
-              border: "2px solid black",
-              top: x * CELL_SIZE,
-              left: y * CELL_SIZE,
-              display: "flex", // Use flexbox to center the text
-              justifyContent: "center", // Center horizontally
-              alignItems: "center", // Center vertically
-              fontSize: "36px", // Adjust the font size as needed
-              fontWeight: "bold", // Optional: Make the text bold
-              textTransform: 'uppercase',
-              pointerEvents: allowEvents
             }}
           >
             {cellText} {/* Render the text in the cell */}
           </div>
         );})}
     </div>
+    </div>
   </Draggable>
   )
 }
 
-const BoardGrid: React.FC <{initialPieces: Pieces, playBoard: Map<string, string>, gameFinished: boolean, onWordSelect: React.Dispatch<React.SetStateAction<string>> }> = ({ initialPieces, playBoard, gameFinished, onWordSelect }) => {
+const BoardGrid: React.FC <{initialPieces: Pieces, playBoard: Map<string, string>, onWordSelect: React.Dispatch<React.SetStateAction<string>> }> = ({ initialPieces, playBoard, onWordSelect }) => {
   const [pieces, setPieces] = useState<([Piece, [number, number]])[]>([]);
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
   const [highlightMode, setHighlightMode] = useState<'row' | 'col' | null>(null);
   const { occupiedCells } = useOccupiedCells();
+  const { buzzing, gameFinished } = useGameState();
 
   useEffect(() => {
     setPieces(JSON.parse(JSON.stringify(initialPieces)));
@@ -201,6 +243,18 @@ const BoardGrid: React.FC <{initialPieces: Pieces, playBoard: Map<string, string
       return occupiedCells.get(key)?.toLowerCase() || '';
     }).join('');
   };
+
+  const [animationFinished, setAnimationFinished] = useState(false);
+
+  // Trigger bounce after all animations finish
+  useEffect(() => {
+    if (gameFinished) {
+      const totalDelay = pieces.length * 0.7; // Adjust delay based on number of pieces
+      setTimeout(() => {
+        setAnimationFinished(true);
+      }, totalDelay + 1000); // 800ms is the duration of the final snap
+    }
+  }, [gameFinished, pieces.length]);
 
   const renderCell = (x: number, y: number) => {
     const key = `${x},${y}`;
@@ -221,7 +275,7 @@ const BoardGrid: React.FC <{initialPieces: Pieces, playBoard: Map<string, string
       setHighlightMode(localMode);
       setSelectedCell([x, y]);
       onWordSelect(word); // set selected word
-      console.log("word: ", word);
+      // console.log("word: ", word);
     };
 
     return (
@@ -234,62 +288,102 @@ const BoardGrid: React.FC <{initialPieces: Pieces, playBoard: Map<string, string
   };
 
   return (
-    <div className="board-container">
-      <div className="grid">
+    <div className={`board-container ${buzzing ? 'buzz' : ''} ${animationFinished ? 'board-oomph' : ''}` }>
         {Array.from({ length: GRID_SIZE }, (_, y) =>
           Array.from({ length: GRID_SIZE }, (_, x) => renderCell(x, y))
         )}
-        <div className="piece-overlays">
+        <div className="piece-overlays" >
         {pieces.map((pieceData, index) => (
-          <DraggablePiece key={index} pieceData={pieceData} index={index} playBoard={playBoard} gameFinished={gameFinished} />
+          <DraggablePiece key={index} pieceData={pieceData} index={index} playBoard={playBoard} />
         ))}
         </div>
-      </div>
     </div>
   );
 };
 
-const Game: React.FC<GameProps> = ({ playBoard, playPieces, solutionBoard, onModalChange, newGame }) => {
+const Game: React.FC<GameProps> = ({ playBoard, playPieces, solutionBoard, newGame, onModalChange }) => {
   const { occupiedCells, resetOccupiedCells } = useOccupiedCells();
-  const [gameKey, setGameKey ] = useState(0);
-  const [timerKey, setTimerKey] = useState(0);
-  const [showTimer, setShowTimer] = useState(false);
-  const [timerPaused, setTimerPaused] = useState(false);
-  const [gameFinished, setGameFinished] = useState(false);
-  const [selectedWord, setSelectedWord] = useState<string>("");
+  const { setBuzzing, gameKey, setGameKey, gameFinished, setGameFinished, gameStarted, setSelectedWord, setGameStarted, setTimerPaused, setShowTimer, setTimerKey } = useGameState();
 
+  const triggerBuzz = () => {
+    setBuzzing(true);
+    setTimeout(() => setBuzzing(false), 200); // match animation duration
+  };
+  
   const checkSolution = () => {
     // Transform solution board into map format
     if (solutionBoard.size === occupiedCells.size &&
       [...solutionBoard.entries()].every(([key, letter]) => occupiedCells.get(key) === letter)) {
-      onModalChange("Congratulations! You solved it!");
+      onModalChange();
       setTimerPaused(true);
       setGameFinished(true);
+      setGameStarted(false);
     } else {
-      onModalChange("Not quite. Keep trying!"); 
+      triggerBuzz();
     }
   };
 
 
   return (
-    <div>
-      <div className="timer">{showTimer && <Timer key={timerKey} paused={timerPaused} />}</div>
-      <button onClick={() => { 
-        resetOccupiedCells(); 
-        newGame(); 
-        setGameKey(prevKey => prevKey + 1); 
-        setGameFinished(false); 
-        setTimerKey(prev => prev + 1); 
-        setShowTimer(true); 
-        setTimerPaused(false); 
-        setSelectedWord("");
-        }} style={{borderColor:'black', marginBottom: "50px"}}>New Game</button>
-      <div>
-        <BoardGrid key={gameKey} initialPieces={playPieces} playBoard={playBoard} gameFinished={gameFinished} onWordSelect={setSelectedWord} />
-        <br></br><button onClick={checkSolution} style={{borderColor:'black'}}>Check</button>
-        {gameFinished && <WordDefinitionModal word={selectedWord} />}
+    <div className='play-scale-wrapper'>
+      <div className='play-container'>
+
+      {/* Center (Board and Buttons) */}
+      <div className="board-wrapper" >
+        <div className='btns-container'>
+          { gameFinished && 
+            <button 
+              className="new-game"
+              onClick={() => { 
+                resetOccupiedCells(); 
+                newGame(gameKey);  
+                setGameFinished(false); 
+                setGameKey(prevKey => prevKey + 2);
+                setTimerKey(prev => prev + 1); 
+                setShowTimer(true); 
+                setTimerPaused(false); 
+                setSelectedWord("");
+                setGameStarted(true);
+              }} 
+              style={{ borderColor: 'black' }}
+            >
+              New Game
+            </button> }
+
+        {gameStarted && !gameFinished && 
+          <>
+          <button className="check-btn" onClick={checkSolution} style={{ height: "4rem", width: "7rem" }}>Check</button>
+          <button 
+            className="skip"
+            onClick={() => { 
+              resetOccupiedCells(); 
+              newGame(gameKey);  
+              setGameFinished(false); 
+              setGameKey(prevKey => prevKey + 2);
+              setTimerKey(prev => prev + 1); 
+              setShowTimer(true); 
+              setTimerPaused(false); 
+              setSelectedWord("");
+              setGameStarted(true);
+            }} 
+            style={{ borderColor: 'black' }}
+          >
+            Skip
+          </button> </>}
+        </div>
+
+        <BoardGrid 
+          key={gameKey} 
+          initialPieces={playPieces} 
+          playBoard={playBoard} 
+          onWordSelect={setSelectedWord} 
+        />
+
       </div>
+      </div>
+
     </div>
+
   );
 };
 

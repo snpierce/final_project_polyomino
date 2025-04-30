@@ -6,10 +6,13 @@ module Trie
     , find
     , make
     , insert
-    , isEmpty ) 
+    , isEmpty
+    , chooseNextWord
+    , isTriesEmpty ) 
 where
 
 import qualified Data.Map.Strict as M
+import qualified Data.List as L
 import Data.Char (toLower)
 import Data.List.Split (splitOn)
 
@@ -39,6 +42,8 @@ transformCSV inputFile outputFile = do
 data Trie = Node (String, Int) (M.Map Char Trie) | Empty (M.Map Char Trie)
   deriving (Eq, Show)
 
+type Tries = M.Map String Trie
+
 empty :: Trie
 empty = Empty M.empty
 
@@ -48,6 +53,10 @@ isEmpty (Empty m) = case M.toList m of
     [('#', t)] -> isEmpty t  -- Check that actual trie is empty
     []         -> True       
     _          -> False 
+
+-- Returns true only if any words contain empty Trie
+isTriesEmpty :: Tries -> Bool
+isTriesEmpty = not . M.null . M.filter isEmpty
 
 getChildren :: Trie -> M.Map Char Trie
 getChildren (Node _ c) = c
@@ -101,4 +110,13 @@ find word t =
     in case res of
         Just nt -> if isEmpty nt then Nothing else Just $ Empty (M.insert '#' nt M.empty) 
         Nothing -> Nothing
-            
+
+
+-- Choose an unassigned word based on smallest Trie
+chooseNextWord :: Tries -> String
+chooseNextWord tries  =
+    let trieSize t = length $ getWords t
+        remaining = M.toList $ M.filter (> 1) $ M.map trieSize tries 
+    in case remaining of
+        [] -> ""
+        unassigned -> fst $ head $ L.sortOn snd unassigned

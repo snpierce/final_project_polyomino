@@ -96,16 +96,18 @@ game = do
                             -- putStrLn "\nShuffled board:\n"
                             -- B.printBoard $ Just playBoard
                             -- P.printPieces tiles playBoard
+                            _ <- liftIO $ writeGameStateToJson "src/data.json" playBoard board tiles
                             pure $ Just (playBoard, board, tiles)
 
 
 run :: B.Board -> Tries -> Int -> IO (Maybe (B.Board, Tries, Int))
 run board tries diff
-  | B.isFull board = pure $ if isTriesEmpty tries then
+  | B.isFull board = pure $ if T.isTriesEmpty tries then
         Nothing else Just (board, tries, diff) -- If there is an empty Trie (invalid word) then backtrack
   | otherwise
   = do
-        let next = B.chooseNextWord board-- which loc to update
+        -- Returns next location to update; "" if tries empty, which will get caught in tryWords so okay
+        let next = T.chooseNextWord tries
         try <- tryWords next board tries diff
         case try of
             Nothing -> pure Nothing
@@ -114,7 +116,7 @@ run board tries diff
 
 tryWords :: String -> B.Board -> Tries -> Int -> IO (Maybe (B.Board, Tries, Int))
 tryWords next board tries diff
-  | isTriesEmpty tries = pure Nothing -- backtrack (?)
+  | T.isTriesEmpty tries = pure Nothing -- backtrack (?)
   | otherwise = do
     let
       tryOptions _ _ [] _ = pure Nothing  -- No words left, backtrack
@@ -122,7 +124,7 @@ tryWords next board tries diff
         let (newBoard, changedWords) = B.updateBoard n word b
             newTries = updateTries ts changedWords newBoard
 
-        if isTriesEmpty newTries || diff + idx > 2  -- If empty or too obscure, keep trying the rest of the words
+        if T.isTriesEmpty newTries || idx > 0  -- If empty or too obscure, keep trying the rest of the words
             then tryOptions b n words ts
             else do
                 nextRes <- run newBoard newTries (diff + idx)  -- Return the first valid board found
@@ -132,10 +134,6 @@ tryWords next board tries diff
     opts <- shuffleM $ T.getWords (fromMaybe T.empty (M.lookup next tries)) -- list of available words at loc
     tryOptions board next opts tries
 
-
--- Returns true only if any words contain empty Trie
-isTriesEmpty :: Tries -> Bool
-isTriesEmpty = not . M.null . M.filter T.isEmpty
 
 -- Update the Trie for each word in String set
 -- The updated word's Trie is not updated **otherwise will trigger isTriesEmpty
@@ -153,9 +151,8 @@ pieces = [P.Dot, P.Dot,
           P.Pair P.Vertical, P.Pair P.Horizontal,
           P.Pair P.Vertical, P.Pair P.Horizontal,
           P.Pair P.Vertical, P.Pair P.Horizontal,
+          P.Pair P.Vertical, P.Pair P.Horizontal,
           P.Stack P.Vertical, P.Stack P.Horizontal,
-          P.Stack P.Vertical, P.Stack P.Horizontal,
-          P.Hook P.Standard, P.Hook P.EastSouth, P.Hook P.SouthEast, P.Hook P.EastNorth, P.Hook P.SouthWest,
           P.Hook P.Standard, P.Hook P.EastSouth, P.Hook P.SouthEast, P.Hook P.EastNorth, P.Hook P.SouthWest]
 
 -- Original board, New Pieces, Transformations (new to old)

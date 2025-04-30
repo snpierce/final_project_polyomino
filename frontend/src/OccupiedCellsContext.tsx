@@ -12,13 +12,13 @@ export const OccupiedCellsProvider = ({ children }: { children: ReactNode }) => 
   const [occupiedCells, setOccupiedCells] = useState<Map<String, String>>(new Map());
 
   const resetOccupiedCells = () => {
-    console.log("bef: ", occupiedCells);
+    // console.log("bef: ", occupiedCells);
     setOccupiedCells(new Map()); // Clears old data
   };
 
   useEffect(() => {
     setOccupiedCells(new Map()); // Reset on mount
-    console.log('OccupiedCellsProvider reset');
+    // console.log('OccupiedCellsProvider reset');
   }, []);
 
   return (

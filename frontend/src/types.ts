@@ -4,8 +4,8 @@ export interface GameProps {
   playBoard: Map<string, string>;
   playPieces: Pieces;
   solutionBoard: Map<string, string>;
-  onModalChange: (newText: string) => void;
-  newGame: () => void;
+  onModalChange: () => void;
+  newGame: (key: number) => void;
 }
 
 // Position on the board: (x, y)

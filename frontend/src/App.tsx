@@ -1,73 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import Modal from './components/Popup';
-import Game from './components/Game';
-import { OccupiedCellsProvider } from './OccupiedCellsContext';
+import React, { useState } from 'react';
+import Home from './components/Home';
+import logo from './assets/polyomino.png';
+import Header from './components/Header';
+import './App.css';
+import { GameStateProvider } from './GameStateContext';
 
 const App: React.FC = () => {
-  const [playBoard, setPlayBoard] = useState(new Map());
-  const [solutionBoard, setSolutionBoard] = useState(new Map());
-  const [pieces, setPieces] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState("");
+  const [started, setStarted] = useState(false);
 
-  function toggleModal() {
-    setShowModal(!showModal);
+  function changeBackground () {
+    document.body.style.backgroundColor = 'white';
   }
-
-  const handleModalData = ( newText: string) => {
-    setModalData(newText);
-    toggleModal();
-  }
-
-  useEffect(() => {
-    console.log("Pieces updated: ", pieces);
-  }, [pieces]);
-
-
-  const newGame = () => {
-    const fetchGameData = async () => {
-      try {
-        const response = await fetch('/api/home');
-        if (!response.ok) {
-          throw new Error('Failed to fetch game data');
-        }
-        const data = await response.json();
-
-        // Convert the playBoard and solutionBoard into Maps
-        const playBoardMap = new Map<string, string>(Object.entries(data.playBoard));
-        const solutionBoardMap = new Map<string, string>(Object.entries(data.solutionBoard));
-
-        setPlayBoard(playBoardMap);
-        setSolutionBoard(solutionBoardMap);
-        setPieces(data.pieces);
-
-        console.log(data.playBoard, data.solutionBoard, data.pieces);
-      } catch (error) {
-        console.error('Error fetching game data:', error);
-      }
-    };
-
-    fetchGameData();
-  };
-
-  if (!playBoard || !solutionBoard || !pieces) {
-    return <div>Loading...</div>;
-  }
+  
 
   return (
-    <OccupiedCellsProvider>
-    <div> 
-      <div className="game-container">
-        {/* <h1 className="title" style={{fontSize:'36px'}} >Polyomino</h1> */}
-          <Game playBoard={playBoard} solutionBoard={solutionBoard} playPieces={pieces} onModalChange={handleModalData} newGame={newGame} />
-      </div>
+    <div className="home-container">
+      {started ? (
+        <div className="game-state" >
+            <GameStateProvider>
+              <Header />
+              <Home />
+            </GameStateProvider>
+          </div>
+      ) : (
+        <div className="open-screen" >
+          <img src={logo} alt="Image" style={{ borderRadius: "10px", border: "2px solid black", position: "relative", height: "125px", width: "125px"}}/>
+          <h1 className='name' >Polyomino</h1>
+          <h3>Rearrange tiles so every row and column forms a word.</h3>
+          <br />
+          <button className="play" onClick={() => { setStarted(true); changeBackground(); }}>Play</button>
+        </div>
+      )}
     </div>
-    <Modal open={showModal} onClose={toggleModal}>
-      <div>
-        {modalData}
-      </div>
-    </Modal>
-    </OccupiedCellsProvider>
   );
 };
 

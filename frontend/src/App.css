@@ -1,7 +1,6 @@
 #root {
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 2rem;
   text-align: center;
 }
 
@@ -39,4 +38,57 @@
 
 .read-the-docs {
   color: #888;
+}
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  transform: scale(0.7);
+  transform-origin: top;
+  max-width: 1200px;
+  max-height: 100%;
+  padding: 40px 10px 0 10px;
+  position: relative;
+  overflow: visible;
+}
+
+.game-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.open-screen {
+  text-align: center;
+  padding-top: 12rem;
+}
+
+button.play {
+  width: 200px;
+  height: 80px;
+  border-radius: 40px;
+  font-size: 30px;
+  font-weight: 600;
+  border-width: 0;
+  color: white;
+  padding: 0px;
+  background-color: black;
+}
+
+@media (max-width: 600px) {
+  .open-screen {
+    transform: scale(0.8);
+    margin-top: -50px;
+  }
+
+  .home-container {
+    transform: scale(0.9);
+  }
+}
+
+.name {
+  font-size: 72px;
 }
